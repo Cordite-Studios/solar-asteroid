@@ -48,7 +48,13 @@ newtype EntityKey       = EntityKey Key     deriving(P.Show, Eq, Ord, Enum, I.Ix
 newtype PartitionKey    = PartitionKey Key  deriving(P.Show, Eq, Ord, Enum, I.Ix)
 newtype AttributeKey    = AttributeKey Key  deriving(P.Show, Eq, Ord, Enum, I.Ix)
 
-data Value  = VRef      {-# UNPACK #-} !EntityKey
+data Reference = Reference
+    { refPartition  :: {-# UNPACK #-} !PartitionKey
+    , refEntity     :: {-# UNPACK #-} !EntityKey
+    }
+    deriving (Eq,Ord)
+
+data Value  = VRef      {-# UNPACK #-} !Reference
             | VText     {-# UNPACK #-} !T.Text
             | VBool     {-# UNPACK #-} !P.Bool
             | VInt32    {-# UNPACK #-} !I.Int32
@@ -183,6 +189,13 @@ instance A.FromJSON Cardnality where
 instance A.ToJSON Cardnality where
     toJSON One = A.Number 1
     toJSON Many = A.Number 2
+
+instance A.FromJSON Reference where
+    parseJSON json = do
+        (partition, entity) <- A.parseJSON json
+        return $ Reference partition entity
+instance A.ToJSON Reference where
+    toJSON Reference{..} = A.toJSON (refPartition, refEntity)
 
 -- Needful for Aeson and our types
 instance A.FromJSON B.ByteString where
